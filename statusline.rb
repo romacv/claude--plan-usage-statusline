@@ -25,6 +25,10 @@ class ClaudeStatusLine
   CACHE_FILE = '/tmp/claude_usage_cache.json'
   CACHE_TTL = 600
   KEYCHAIN_SERVICE = 'Claude Code-credentials'
+  MIDDLE_TRUNCATE_THRESHOLD = 23
+  MIDDLE_TRUNCATE_HEAD = 11
+  MIDDLE_TRUNCATE_TAIL = 8
+  MIDDLE_TRUNCATE_MARKER = '....'
 
   COLORS = {
     directory: "\033[38;5;110m",
@@ -84,7 +88,7 @@ class ClaudeStatusLine
 
   def short_path
     return '' unless @current_dir
-    @current_dir.sub(/\A#{Regexp.escape(Dir.home)}(?=\/|\z)/, '~')
+    middle_truncate(@current_dir.sub(/\A#{Regexp.escape(Dir.home)}(?=\/|\z)/, '~'))
   end
 
   def git_data
@@ -106,10 +110,16 @@ class ClaudeStatusLine
       indicators = build_git_indicators
       color = indicators.empty? ? :git_clean : :git_dirty
 
-      { worktree: worktree, branch: branch, indicators: indicators, color: color }
+      { worktree: worktree, branch: middle_truncate(branch), indicators: indicators, color: color }
     end
   rescue
     default
+  end
+
+  def middle_truncate(text)
+    return text if text.length <= MIDDLE_TRUNCATE_THRESHOLD
+
+    "#{text[0, MIDDLE_TRUNCATE_HEAD]}#{MIDDLE_TRUNCATE_MARKER}#{text[-MIDDLE_TRUNCATE_TAIL, MIDDLE_TRUNCATE_TAIL]}"
   end
 
   def build_git_indicators
